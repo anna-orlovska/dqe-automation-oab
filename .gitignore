@@ -1,0 +1,33 @@
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pytest / coverage cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Optional caches
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# IDE/editor files
+.idea/
+.vscode/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Test reports (згенеровані артефакти)
+reports/

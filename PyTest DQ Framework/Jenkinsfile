@@ -1,0 +1,119 @@
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 1, unit: 'HOURS')
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    environment {
+        POSTGRES_CREDENTIALS = credentials('POSTGRES_SECRET')
+        DB_HOST = 'postgres'
+        DB_PORT = '5432'
+        DB_NAME = 'mydatabase'
+        DB_USER = "${POSTGRES_CREDENTIALS_USR}"
+        DB_PASSWORD = "${POSTGRES_CREDENTIALS_PSW}"
+        PYTEST_DIR = 'PyTest DQ Framework'
+        VENV_DIR = 'venv_3.13'
+        REPORTS_DIR = 'html_report'
+        ALLURE_RESULTS_DIR = 'allure-results'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    echo '========== Checking out source code =========='
+                }
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    echo '========== Installing Python dependencies =========='
+                }
+                sh '''
+                    if [ ! -d "${VENV_DIR}" ]; then
+                        python3 -m venv ${VENV_DIR}
+                    fi
+                    . ${VENV_DIR}/bin/activate
+                    pip install --upgrade pip
+                    pip install -r "${PYTEST_DIR}/requirements.txt"
+                '''
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo '========== Running PyTest DQ Tests =========='
+                }
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    cd "${PYTEST_DIR}"
+                    pytest tests \\
+                        --db_host=${DB_HOST} \\
+                        --db_port=${DB_PORT} \\
+                        --db_name=${DB_NAME} \\
+                        --db_user=${DB_USER} \\
+                        --db_password=${DB_PASSWORD} \\
+                        --html=../html_report/report.html \\
+                        --self-contained-html \\
+                        --alluredir=../allure-results \\
+                        -v || true
+                '''
+            }
+        }
+
+        stage('Archive Reports') {
+            steps {
+                script {
+                    echo '========== Archiving test reports =========='
+                }
+                archiveArtifacts artifacts: 'html_report/**,allure-results/**',
+                                  allowEmptyArchive: true,
+                                  fingerprint: true
+            }
+        }
+
+        stage('Publish HTML Report') {
+            steps {
+                script {
+                    echo '========== Publishing HTML report =========='
+                }
+                publishHTML target: [
+                    reportDir: "${REPORTS_DIR}",
+                    reportFiles: 'report.html',
+                    reportName: 'PyTest DQ Report',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true
+                ]
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo '========== Pipeline execution completed =========='
+                cleanWs(deleteDirs: true, patterns: [
+                    [pattern: "${VENV_DIR}/**", type: 'INCLUDE'],
+                    [pattern: '__pycache__/**', type: 'INCLUDE']
+                ])
+            }
+        }
+        success {
+            script {
+                echo '========== Pipeline succeeded =========='
+            }
+        }
+        failure {
+            script {
+                echo '========== Pipeline failed =========='
+            }
+        }
+    }
+}

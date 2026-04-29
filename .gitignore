@@ -11,6 +11,8 @@ htmlcov/
 # Virtual environments
 venv/
 .venv/
+venv_3.13/
+venv_3.14/
 env/
 ENV/
 
@@ -31,3 +33,6 @@ Thumbs.db
 
 # Test reports (згенеровані артефакти)
 reports/
+
+# Data files
+parquet_data/

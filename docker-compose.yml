@@ -14,6 +14,7 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./parquet_data:/parquet_data 
 
   jenkins:
     image: jenkins/jenkins:lts
@@ -26,6 +27,7 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - ./parquet_data:/parquet_data
 
 networks:
   tafordqenetwork:

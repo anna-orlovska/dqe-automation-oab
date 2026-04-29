@@ -1,7 +1,7 @@
 """
-Description: Data Quality checks for facility_name_min_time_spent_per_visit_date dataset.
-Validates that minimum time spent per facility and visit date is correctly calculated.
-Requirement(s): FRAMEWORK-011
+Description: Data Quality checks for facility_type_avg_time_spent_per_visit_date dataset.
+Validates that average time spent per facility type and visit date is correctly calculated.
+Requirement(s): FRAMEWORK-012
 Author(s): QA Team
 """
 
@@ -11,18 +11,19 @@ import os
 
 @pytest.fixture(scope='module')
 def source_data(db_connection):
-    """Fetch facility and time spent data from PostgreSQL."""
+    """Fetch facility type and average time spent data from PostgreSQL."""
     source_query = """
     SELECT
-        facility_name,
+        facility_type,
         visit_date,
-        MIN(time_spent) as min_time_spent
+        AVG(time_spent) as avg_time_spent,
+        COUNT(*) as visit_count
     FROM patient_treatment
-    WHERE facility_name IS NOT NULL
+    WHERE facility_type IS NOT NULL
         AND visit_date IS NOT NULL
         AND time_spent IS NOT NULL
-    GROUP BY facility_name, visit_date
-    ORDER BY facility_name, visit_date
+    GROUP BY facility_type, visit_date
+    ORDER BY facility_type, visit_date
     """
     return db_connection.get_data_sql(source_query)
 
@@ -30,12 +31,12 @@ def source_data(db_connection):
 @pytest.fixture(scope='module')
 def target_data(parquet_reader, parquet_path):
     """Load target data from Parquet files."""
-    target_path = os.path.join(parquet_path, 'facility_name_min_time_spent_per_visit_date')
+    target_path = os.path.join(parquet_path, 'facility_type_avg_time_spent_per_visit_date')
     return parquet_reader.process(target_path, include_subfolders=True)
 
 
 class TestSmoke:
-    """Smoke tests for facility_name_min_time_spent dataset."""
+    """Smoke tests for facility_type_avg_time_spent dataset."""
 
     @pytest.mark.smoke
     @pytest.mark.parquet_data
@@ -53,7 +54,7 @@ class TestSmoke:
     @pytest.mark.parquet_data
     def test_source_columns_exist(self, source_data):
         """Verify source has required columns."""
-        required_columns = ['facility_name', 'visit_date', 'min_time_spent']
+        required_columns = ['facility_type', 'visit_date', 'avg_time_spent']
         missing = [col for col in required_columns if col not in source_data.columns]
         assert not missing, f"Missing columns in source: {missing}"
 
@@ -61,26 +62,26 @@ class TestSmoke:
     @pytest.mark.parquet_data
     def test_target_columns_exist(self, target_data):
         """Verify target has required columns."""
-        required_columns = ['facility_name', 'visit_date', 'min_time_spent']
+        required_columns = ['facility_type', 'visit_date', 'avg_time_spent']
         missing = [col for col in required_columns if col not in target_data.columns]
         assert not missing, f"Missing columns in target: {missing}"
 
 
 class TestCompleteness:
-    """Completeness tests for facility_name_min_time_spent dataset."""
+    """Completeness tests for facility_type_avg_time_spent dataset."""
 
     @pytest.mark.completeness
     @pytest.mark.parquet_data
     def test_source_no_nulls_key_columns(self, source_data, data_quality_library):
         """Verify source has no nulls in key columns."""
-        key_columns = ['facility_name', 'visit_date', 'min_time_spent']
+        key_columns = ['facility_type', 'visit_date', 'avg_time_spent']
         data_quality_library.check_data_completeness(source_data, key_columns)
 
     @pytest.mark.completeness
     @pytest.mark.parquet_data
     def test_target_no_nulls_key_columns(self, target_data, data_quality_library):
         """Verify target has no nulls in key columns."""
-        key_columns = ['facility_name', 'visit_date', 'min_time_spent']
+        key_columns = ['facility_type', 'visit_date', 'avg_time_spent']
         data_quality_library.check_data_completeness(target_data, key_columns)
 
     @pytest.mark.completeness
@@ -97,41 +98,44 @@ class TestCompleteness:
 
 
 class TestQuality:
-    """Data quality tests for facility_name_min_time_spent dataset."""
+    """Data quality tests for facility_type_avg_time_spent dataset."""
 
     @pytest.mark.quality
     @pytest.mark.parquet_data
     def test_source_no_duplicates(self, source_data, data_quality_library):
-        """Verify source has no duplicate facility_name/visit_date combinations."""
-        data_quality_library.check_duplicates(source_data, column_names=['facility_name', 'visit_date'])
+        """Verify source has no duplicate facility_type/visit_date combinations."""
+        data_quality_library.check_duplicates(source_data, column_names=['facility_type', 'visit_date'])
 
     @pytest.mark.quality
     @pytest.mark.parquet_data
     def test_target_no_duplicates(self, target_data, data_quality_library):
-        """Verify target has no duplicate facility_name/visit_date combinations."""
-        data_quality_library.check_duplicates(target_data, column_names=['facility_name', 'visit_date'])
+        """Verify target has no duplicate facility_type/visit_date combinations."""
+        data_quality_library.check_duplicates(target_data, column_names=['facility_type', 'visit_date'])
 
     @pytest.mark.quality
     @pytest.mark.parquet_data
-    def test_source_min_time_spent_positive(self, source_data):
-        """Verify min_time_spent values are positive."""
-        negative = (source_data['min_time_spent'] < 0).sum()
-        assert negative == 0, f"Found {negative} negative min_time_spent values in source"
+    def test_source_avg_time_spent_positive(self, source_data):
+        """Verify avg_time_spent values are positive."""
+        negative = (source_data['avg_time_spent'] < 0).sum()
+        assert negative == 0, f"Found {negative} negative avg_time_spent values in source"
 
     @pytest.mark.quality
     @pytest.mark.parquet_data
-    def test_target_min_time_spent_positive(self, target_data):
-        """Verify min_time_spent values are positive."""
-        negative = (target_data['min_time_spent'] < 0).sum()
-        assert negative == 0, f"Found {negative} negative min_time_spent values in target"
+    def test_target_avg_time_spent_positive(self, target_data):
+        """Verify avg_time_spent values are positive."""
+        negative = (target_data['avg_time_spent'] < 0).sum()
+        assert negative == 0, f"Found {negative} negative avg_time_spent values in target"
 
     @pytest.mark.quality
     @pytest.mark.parquet_data
-    def test_visit_date_is_date(self, source_data):
-        """Verify visit_date column contains valid dates."""
-        try:
-            import pandas as pd
-            dates = pd.to_datetime(source_data['visit_date'])
-            assert len(dates) == len(source_data), "Some dates could not be parsed"
-        except Exception as e:
-            pytest.fail(f"Invalid date format in source data: {str(e)}")
+    def test_facility_type_valid_values(self, source_data):
+        """Verify facility_type contains expected values."""
+        valid_types = {'Hospital', 'Clinic', 'Laboratory'}
+        invalid = source_data[~source_data['facility_type'].isin(valid_types)]
+        assert len(invalid) == 0, f"Found invalid facility types: {invalid['facility_type'].unique().tolist()}"
+
+    @pytest.mark.quality
+    @pytest.mark.parquet_data
+    def test_source_target_row_count_match(self, source_data, target_data, data_quality_library):
+        """Verify source and target have matching row counts."""
+        data_quality_library.check_count(source_data, target_data)

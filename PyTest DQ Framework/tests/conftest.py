@@ -1,9 +1,9 @@
 import pytest
 import os
 
-from connectors.postgres.postgres_connector import PostgresConnectorContextManager
-from data_quality.data_quality_validation_library import DataQualityLibrary
-from connectors.file_system.parquet_reader import ParquetReader
+from src.connectors.postgres.postgres_connector import PostgresConnectorContextManager
+from src.data_quality.data_quality_validation_library import DataQualityLibrary
+from src.connectors.file_system.parquet_reader import ParquetReader
 
 
 def pytest_addoption(parser):

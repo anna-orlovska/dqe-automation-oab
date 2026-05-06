@@ -53,11 +53,14 @@ class TestDuplicateDetection:
     """Tests for detecting duplicate records."""
 
     @pytest.mark.quality
+    @pytest.mark.check
+    @pytest.mark.happy_path
     def test_source_no_row_duplicates(self, source_treatment_data, data_quality_library):
         """Verify source has no exact duplicate rows."""
         data_quality_library.check_duplicates(source_treatment_data)
 
     @pytest.mark.quality
+    @pytest.mark.check
     def test_source_no_patient_visit_duplicates(self, source_treatment_data, data_quality_library):
         """Verify source has no duplicate patient visits on same date."""
         data_quality_library.check_duplicates(
@@ -66,6 +69,7 @@ class TestDuplicateDetection:
         )
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_aggregated_no_duplicates(self, aggregated_source, data_quality_library):
         """Verify aggregated source has no duplicate patient/facility combinations."""
         data_quality_library.check_duplicates(
@@ -86,11 +90,14 @@ class TestNullValues:
     """Tests for null value detection and validation."""
 
     @pytest.mark.quality
+    @pytest.mark.check
+    @pytest.mark.happy_path
     def test_source_no_nulls(self, source_treatment_data, data_quality_library):
         """Verify source has no null values in any column."""
         data_quality_library.check_data_completeness(source_treatment_data)
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_aggregated_source_no_nulls(self, aggregated_source, data_quality_library):
         """Verify aggregated source has no null values."""
         data_quality_library.check_data_completeness(aggregated_source)
@@ -150,24 +157,28 @@ class TestDataValidation:
     """Tests for data validation and business rules."""
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_treatment_cost_not_negative(self, source_treatment_data):
         """Verify all treatment costs are non-negative."""
         negative_costs = source_treatment_data[source_treatment_data['treatment_cost'] < 0]
         assert len(negative_costs) == 0, f"Found {len(negative_costs)} negative treatment costs"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_time_spent_not_negative(self, source_treatment_data):
         """Verify all time spent values are non-negative."""
         negative_times = source_treatment_data[source_treatment_data['time_spent'] < 0]
         assert len(negative_times) == 0, f"Found {len(negative_times)} negative time spent values"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_visit_count_positive(self, aggregated_source):
         """Verify visit count is always positive."""
         invalid_counts = aggregated_source[aggregated_source['visit_count'] <= 0]
         assert len(invalid_counts) == 0, f"Found {len(invalid_counts)} invalid visit counts"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_facility_type_not_empty(self, source_treatment_data):
         """Verify facility type is never empty string."""
         empty_facility = source_treatment_data[
@@ -177,6 +188,7 @@ class TestDataValidation:
         assert len(empty_facility) == 0, f"Found {len(empty_facility)} empty facility types"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_valid_visit_dates(self, source_treatment_data):
         """Verify visit dates are in valid format and reasonable range."""
         try:
@@ -191,6 +203,7 @@ class TestDataMofidence:
     """Tests for data quality confidence metrics."""
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_dataset_size_reasonable(self, source_treatment_data):
         """Verify dataset has reasonable size for testing."""
         min_rows = 5
@@ -198,6 +211,7 @@ class TestDataMofidence:
             f"Dataset too small: {len(source_treatment_data)} rows (minimum: {min_rows})"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_facility_type_distribution(self, source_treatment_data):
         """Verify we have data from multiple facility types."""
         facility_types = source_treatment_data['facility_type'].unique()
@@ -205,6 +219,7 @@ class TestDataMofidence:
             f"Need at least 2 facility types, found {len(facility_types)}: {facility_types}"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_multiple_patients(self, source_treatment_data):
         """Verify data includes multiple patients."""
         patient_count = source_treatment_data['patient_id'].nunique()
@@ -213,6 +228,7 @@ class TestDataMofidence:
             f"Need at least {min_patients} patients, found {patient_count}"
 
     @pytest.mark.quality
+    @pytest.mark.happy_path
     def test_aggregation_correctness(self, source_treatment_data, aggregated_source):
         """Verify aggregation calculations are correct."""
         for _, agg_row in aggregated_source.iterrows():

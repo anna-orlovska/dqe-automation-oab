@@ -86,8 +86,9 @@ except Exception as e:
 
 ### 5. **Path Resolution Issues** 🟡 IMPORTANT
 **Problem**: Tests have hardcoded paths:
+
 ```python
-target_path = 'parquet_data/patient_sum_treatment_cost_per_facility_type'
+target_path = '../parquet_data/patient_sum_treatment_cost_per_facility_type'
 ```
 
 **Potential Issue**:

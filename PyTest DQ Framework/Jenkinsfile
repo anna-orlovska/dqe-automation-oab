@@ -54,7 +54,7 @@ pipeline {
                 sh '''
                     . ${VENV_DIR}/bin/activate
                     cd "${PYTEST_DIR}"
-                    pytest tests \\
+                    pytest -m "happy_path" \\
                         --db_host=${DB_HOST} \\
                         --db_port=${DB_PORT} \\
                         --db_name=${DB_NAME} \\

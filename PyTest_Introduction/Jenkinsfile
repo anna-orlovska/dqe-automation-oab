@@ -1,0 +1,18 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Install dependencies') {
+            steps {
+                sh 'pip install -r PyTest_Introduction/requirements.txt'
+            }
+        }
+        stage('Run tests') {
+            steps {
+                dir('PyTest_Introduction') {
+                    sh 'pytest'
+                }
+            }
+        }
+    }
+}

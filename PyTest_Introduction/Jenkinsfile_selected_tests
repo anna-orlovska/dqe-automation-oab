@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Create venv') {
+            steps {
+                sh 'python3 -m venv venv'
+            }
+        }
+        stage('Install dependencies') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    pip install -r PyTest_Introduction/requirements.txt
+                '''
+            }
+        }
+        stage('Run selected tests') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    pytest PyTest_Introduction/tests/test_csv/test_csv_file.py::test_file_not_empty PyTest_Introduction/tests/test_csv/test_csv_file.py::test_validate_schema
+                '''
+            }
+        }
+    }
+}
